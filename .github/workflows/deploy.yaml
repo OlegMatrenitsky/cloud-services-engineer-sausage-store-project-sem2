@@ -15,55 +15,47 @@ env:
   VERSION: "0.1.0"
 
 jobs:
-  # Сборка и пуш образов в докерхаб:
+
+  # Сборка и пуш образов в Docker Hub
   build_and_push_to_docker_hub:
-      name: Push Docker image to DockerHub
-      runs-on: ubuntu-latest
-      steps:
-        - name: Check out the repo
-          # Получение исходного кода из репозитория:
-          uses: actions/checkout@v3
-        - name: Set up Docker Buildx
-          # Установка сборщика контейнеров Docker:
-          uses: docker/setup-buildx-action@v2
-        - name: Login to Docker 
-          # Авторизация на Docker Hub:
-          uses: docker/login-action@v2
-          # При помощи with передаём в action параметры username и password:
-          with:
-            username: ${{ secrets.DOCKER_USER }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
-            # Хорошо ли держать логин и пароль прямо в коде workflow?
-            # Нет, это нехорошо. Хранить пароль надо в Secrets.
-        - name: Push Backend to DockerHub
-          # Одновременный билд и пуш образа в Docker Hub:
-          uses: docker/build-push-action@v4
-          with:
-            # Параметр context: ./backend/ указывает, что нужный Dockerfile 
-            # находится в ./backend/
-            context: ./backend/
-            # Параметр push: true указывает, что образ нужно не только собрать,
-            # но и отправить на Docker Hub:
-            push: true
-            # В параметре tags задаётся название и тег для образа.
-            # Для каждого пересобранного образа 
-            # устанавливаем тег latest, чтобы потом
-            # на сервере и в docker-compose.yml не указывать версию образа:
-            tags: omatrenitsky/sausage-backend:latest
-            build-args: |
-              VERSION=${{ github.sha }}
-        - name: Push Frontend to DockerHub
-          uses: docker/build-push-action@v4
-          with:
-            context: ./frontend/
-            push: true
-            tags: omatrenitsky/sausage-frontend:latest
-        - name: Push Backend-report to DockerHub
-          uses: docker/build-push-action@v4
-          with:
-            context: ./backend-report/
-            push: true
-            tags: omatrenitsky/sausage-backend-report:latest
+    name: Push Docker images to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Backend to Docker Hub
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend/
+          push: true
+          tags: omatrenitsky/sausage-backend:latest
+          build-args: |
+            VERSION=${{ github.sha }}
+
+      - name: Push Frontend to Docker Hub
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend/
+          push: true
+          tags: omatrenitsky/sausage-frontend:latest
+
+      - name: Push Backend-report to Docker Hub
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend-report/
+          push: true
+          tags: omatrenitsky/sausage-backend-report:latest
 
   # Упаковываем Helm chart и пушим его в Nexus
   add_helm_chart_to_nexus:
@@ -81,24 +73,18 @@ jobs:
           version: v3.13.0
 
       - name: Build Helm chart dependencies
-        run: helm dependency build ./sausage-store-chart
+        run: |
+          helm dependency build ./sausage-store-chart
 
       - name: Package Helm chart
-        run: helm package ./sausage-store-chart --version "${{ env.VERSION }}"
-
-      - name: Push chart to Nexus
-        run:  curl -f -v -u "${{ env.NEXUS_HELM_REPO_USER }}:${{ env.NEXUS_HELM_REPO_PASSWORD }}" --upload-file "sausage-store-${{ env.VERSION }}.tgz" "${{ env.NEXUS_HELM_REPO }}/sausage-store-${{ env.VERSION }}.tgz"              
+        run: |
+          helm package ./sausage-store-chart \
+            --version "${{ env.VERSION }}"
 
       - name: Push chart to Nexus
         run: |
-          curl -f -u "${{ env.NEXUS_HELM_REPO_USER }}:${{ env.NEXUS_HELM_REPO_PASSWORD }}" \
+          curl -f -v \
+            -u "${{ env.NEXUS_HELM_REPO_USER }}:${{ env.NEXUS_HELM_REPO_PASSWORD }}" \
             --upload-file "sausage-store-${{ env.VERSION }}.tgz" \
-            "${{ env.NEXUS_HELM_REPO }}"
+            "${{ env.NEXUS_HELM_REPO }}/sausage-store-${{ env.VERSION }}.tgz"
 
-      - name: Verify chart uploaded
-        run: |
-          helm repo update
-          helm search repo nexus/sausage-store --version "${{ env.VERSION }}"
-
-
-  
