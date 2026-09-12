@@ -65,7 +65,6 @@ jobs:
             push: true
             tags: omatrenitsky/sausage-backend-report:latest
 
-
   # Упаковываем Helm chart и пушим его в Nexus
   add_helm_chart_to_nexus:
     name: Add Helm Chart To Nexus
