@@ -85,13 +85,13 @@ jobs:
         run: helm dependency build ./sausage-store-chart
 
       - name: Package Helm chart
-        run: helm package ./sausage-store-chart --version ${{ env.VERSION }}
+        run: helm package ./sausage-store-chart --version "${{ env.VERSION }}"
 
-      - name: Add Nexus Helm repo
-        run: |
-          helm repo add nexus "${{ env.NEXUS_HELM_REPO }}" \
-            --username "${{ env.NEXUS_HELM_REPO_USER }}" \
-            --password "${{ env.NEXUS_HELM_REPO_PASSWORD }}"
+      - name: Push chart to Nexus
+        run:  curl -f -v \
+          -u "${{ env.NEXUS_HELM_REPO_USER }}:${{ env.NEXUS_HELM_REPO_PASSWORD }}" \
+          --upload-file "sausage-store-${{ env.VERSION }}.tgz" \
+          "${{ env.NEXUS_HELM_REPO }}/sausage-store-${{ env.VERSION }}.tgz"      
 
           helm repo update
 
