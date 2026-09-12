@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-init-reports
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "10"
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+
+      containers:
+        - name: mongo-client
+          image: {{ .Values.mongodb.image | quote }}
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MongoDB to become ready..."
+
+              until mongosh --host mongodb \
+                -u "$MONGO_INITDB_ROOT_USERNAME" \
+                -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                --authenticationDatabase admin \
+                --eval "db.adminCommand('ping')" \
+                --quiet; do
+                echo "MongoDB not ready, waiting..."
+                sleep 5
+              done
+
+              echo "MongoDB is ready."
+
+              mongosh --host mongodb \
+                -u "$MONGO_INITDB_ROOT_USERNAME" \
+                -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                --authenticationDatabase admin \
+                --eval "
+                  db = db.getSiblingDB('$REPORTS_DB');
+
+                  if (!db.getUser('$REPORTS_USER')) {
+                    db.createUser({
+                      user: '$REPORTS_USER',
+                      pwd: '$REPORTS_PASSWORD',
+                      roles: [
+                        { role: 'readWrite', db: '$REPORTS_DB' }
+                      ]
+                    });
+                    print('User created successfully.');
+                  } else {
+                    print('User already exists.');
+                  }
+                "
+
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-conf
+                  key: MONGO_INITDB_ROOT_USERNAME
+
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-conf
+                  key: MONGO_INITDB_ROOT_PASSWORD
+
+            - name: REPORTS_DB
+              value: {{ .Values.mongodb.reports.database | quote }}
+
+            - name: REPORTS_USER
+              value: {{ .Values.mongodb.reports.user | quote }}
+
+            - name: REPORTS_PASSWORD
+              value: {{ .Values.mongodb.reports.password | quote }}
