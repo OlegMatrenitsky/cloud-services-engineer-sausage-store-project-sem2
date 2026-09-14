@@ -21,7 +21,7 @@ frontend:
   global:
     imagePullPolicy: Always
   ingress:
-    host: ""
+    host: "front-omatrenitsky.2sem.students-projects.ru"
     path: /
     pathType: Prefix
   containerPort: 80
