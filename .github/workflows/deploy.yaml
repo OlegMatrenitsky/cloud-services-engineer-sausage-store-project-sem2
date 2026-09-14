@@ -88,6 +88,7 @@ jobs:
             --upload-file "sausage-store-${{ env.VERSION }}.tgz" \
             "${{ env.NEXUS_HELM_REPO }}/sausage-store-${{ env.VERSION }}.tgz"
 
+            
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
     name: Deploy Helm Chart To Kubernetes
