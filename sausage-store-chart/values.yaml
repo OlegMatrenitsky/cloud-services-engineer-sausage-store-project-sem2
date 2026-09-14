@@ -60,10 +60,10 @@ backend:
   resources:
     requests:
       memory: "128Mi"
-      cpu: "200m"
+      cpu: "150m"
     limits:
       memory: "256Mi"
-      cpu: "200m"
+      cpu: "150m"
   containerPort: 8080
   livenessProbe:
     httpGet:
@@ -101,7 +101,7 @@ backend-report:
       cpu: "50m"
     limits:
       memory: "256Mi"
-      cpu: "300m"
+      cpu: "250m"
   hpa:
     enabled: true
     minReplicas: 1
