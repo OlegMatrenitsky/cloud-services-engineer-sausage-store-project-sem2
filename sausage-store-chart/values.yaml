@@ -2,7 +2,7 @@ global:
   imagePullPolicy: Always
 
   vault:
-    host: "http://84.252.134.85:8200"
+    host: "84.252.134.85"
     name: vault-token
     vaultToken: ""
 
