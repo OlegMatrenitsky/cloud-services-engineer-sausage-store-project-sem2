@@ -1,8 +1,11 @@
 global:
   imagePullPolicy: Always
+
   vault:
-    host: ""
+    host: "http://84.252.134.85:8200"
     name: vault-token
+    vaultToken: ""
+
   mongodb:
     reports:
       database: sausage-store
@@ -14,18 +17,25 @@ global:
 frontend:
   replicas: 1
   revisionHistoryLimit: 15
+
   strategy:
     type: Recreate
+
   service:
     port: 80
+
   global:
     imagePullPolicy: Always
+
   ingress:
     host: "front-omatrenitsky.2sem.students-projects.ru"
     path: /
     pathType: Prefix
+
   containerPort: 80
+
   image: omatrenitsky/sausage-frontend:latest
+
   resources:
     requests:
       memory: "32Mi"
@@ -33,30 +43,36 @@ frontend:
     limits:
       memory: "128Mi"
       cpu: "50m"
+
   nginxConf: nginx.conf
+
 
 backend:
   annotations:
     path: /actuator/prometheus
     port: "8080"
     scrape: "true"
+
   env:
     postgresUri: jdbc:postgresql://postgresql:5432/sausage-store
-    postgresUser: store
-    postgresPassword: storepassword
     reportPath: /logs/reports
     logPath: /logs
+
   service:
     port: 8080
+
   revisionHistoryLimit: 15
   replicas: 1
-  strategy:    
+
+  strategy:
     type: RollingUpdate
     rollingUpdate:
-       maxSurge: 25%
-       maxUnavailable: 25%
+      maxSurge: 25%
+      maxUnavailable: 25%
+
   image: omatrenitsky/sausage-backend:latest
   imagePullPolicy: Always
+
   resources:
     requests:
       memory: "128Mi"
@@ -64,37 +80,51 @@ backend:
     limits:
       memory: "256Mi"
       cpu: "150m"
+
   containerPort: 8080
+
   livenessProbe:
     httpGet:
       path: /actuator/health
       port: 8080
     initialDelaySeconds: 90
     periodSeconds: 10
+
   vpa:
     updatePolicy:
       updateMode: "Off"
+
     resourcePolicy:
       containerPolicies:
         - containerName: "*"
           mode: "Auto"
-          controlledResources: ["cpu", "memory"]
+          controlledResources:
+            - "cpu"
+            - "memory"
+
           minAllowed:
             cpu: 0m
             memory: 0Mi
+
           maxAllowed:
             cpu: 200m
             memory: 256Mi
 
+
 backend-report:
   replicas: 1
   revisionHistoryLimit: 15
+
   strategy:
     type: Recreate
+
   image: omatrenitsky/sausage-backend-report:latest
+
   containerPort: 8080
+
   service:
     port: 8080
+
   resources:
     requests:
       memory: "64Mi"
@@ -102,43 +132,59 @@ backend-report:
     limits:
       memory: "256Mi"
       cpu: "250m"
+
   hpa:
     enabled: true
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
 
+
 infra:
   postgresql:
     image: postgres:13
+
     containerPort: 5432
+
     storage: 2Gi
+
     env:
       POSTGRES_DB: sausage-store
       POSTGRES_USER: store
       POSTGRES_PASSWORD: storepassword
+
     resources:
       requests:
         cpu: "100m"
         memory: "128Mi"
+
       limits:
         cpu: "500m"
         memory: "512Mi"
+
+
   mongodb:
     image: mongo:7.0
+
     env:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
+
     reports:
       database: sausage-store
       user: reports
       password: reportspassword
+
     containerPort: 27017
+
     storage: 1Gi
+
     resources:
       requests:
         cpu: "200m"
         memory: "256Mi"
+
       limits:
         cpu: "200m"
         memory: "256Mi"
+

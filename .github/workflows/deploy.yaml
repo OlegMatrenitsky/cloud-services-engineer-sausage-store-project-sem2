@@ -117,9 +117,12 @@ jobs:
           
       - name: Deploy with Helm
         run: |
-          envsubst < ./sausage-store-chart/values.yaml > ./values-resolved.yaml
-          helm upgrade --install sausage-store nexus/sausage-store \
-            --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
-            --values ./values-resolved.yaml \
-            --kubeconfig ./kubeconfig
+         helm upgrade --install sausage-store nexus/sausage-store \
+          --namespace "${SAUSAGE_STORE_NAMESPACE}" \
+          --create-namespace \
+          --values ./sausage-store-chart/values.yaml \
+          --set global.vault.vaultToken="${VAULT_TOKEN}" \
+          --kubeconfig ./kubeconfig \
+          --wait \
+          --timeout 10m
 
