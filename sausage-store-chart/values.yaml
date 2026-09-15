@@ -82,12 +82,21 @@ backend:
 
   containerPort: 8080
 
+  startupProbe:
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+
   livenessProbe:
     httpGet:
       path: /actuator/health
       port: 8080
-    initialDelaySeconds: 90
     periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
 
   vpa:
     updatePolicy:

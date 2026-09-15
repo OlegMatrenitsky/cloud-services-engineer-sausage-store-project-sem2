@@ -40,22 +40,19 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
 
           env:
-            # PostgreSQL URL не содержит логина/пароля,
-            # поэтому его можно оставить в ConfigMap.
+            
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 configMapKeyRef:
                   name: {{ .Release.Name }}-{{ .Chart.Name }}-conf
                   key: postgres_uri
-
-            # Логин и пароль PostgreSQL теперь берутся из Vault
-            # через Spring Cloud Vault.
+            
             - name: SPRING_CLOUD_VAULT_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.global.vault.name }}
                   key: vault_token
-
+            
             - name: SPRING_CLOUD_VAULT_HOST
               value: {{ .Values.global.vault.host | quote }}
 
@@ -78,9 +75,14 @@ spec:
             - name: {{ .Chart.Name }}
               containerPort: {{ .Values.containerPort }}
 
+          # Даём Spring Boot достаточно времени для первого запуска.
+          startupProbe:
+{{ toYaml .Values.startupProbe | indent 12 }}
+
+          # После успешного startupProbe Kubernetes начинает
+          # контролировать жизнеспособность приложения.
           livenessProbe:
 {{ toYaml .Values.livenessProbe | indent 12 }}
-
 
 ---
 apiVersion: autoscaling.k8s.io/v1
