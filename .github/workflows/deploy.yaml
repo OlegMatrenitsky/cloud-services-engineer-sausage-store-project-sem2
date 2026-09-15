@@ -76,6 +76,10 @@ jobs:
         run: |
           helm dependency build ./sausage-store-chart
 
+      - name: Lint Helm chart
+        run: |
+          helm lint ./sausage-store-chart
+
       - name: Package Helm chart
         run: |
           helm package ./sausage-store-chart \
